@@ -51,13 +51,21 @@ def seed_sklearn_estimator(estimator: Any, seed: int) -> Any:
     """
     validate_seed(seed)
     
-    if hasattr(estimator, 'random_state'):
-        estimator.random_state = seed
-    elif hasattr(estimator, 'set_params'):
+    # Try set_params first (most common sklearn pattern)
+    if hasattr(estimator, 'set_params'):
         try:
             estimator.set_params(random_state=seed)
+            return estimator
         except (ValueError, TypeError):
-            # Estimator doesn't have random_state parameter
+            # Estimator doesn't have random_state parameter or set_params failed
+            pass
+    
+    # Try direct attribute setting (fallback)
+    if hasattr(estimator, 'random_state'):
+        try:
+            estimator.random_state = seed
+        except AttributeError:
+            # random_state is a read-only property
             pass
     
     return estimator

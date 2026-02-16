@@ -1,0 +1,307 @@
+Metadata-Version: 2.4
+Name: seed_everything
+Version: 0.1.0
+Summary: Comprehensive seeding for reproducible ML training across all major frameworks
+Home-page: https://github.com/yuv4r4j/seed_everything
+Author: seed_everything contributors
+License: MIT
+Project-URL: Homepage, https://github.com/yuv4r4j/seed_everything
+Project-URL: Repository, https://github.com/yuv4r4j/seed_everything
+Project-URL: Issues, https://github.com/yuv4r4j/seed_everything/issues
+Keywords: seed,random,reproducibility,machine-learning,deep-learning,pytorch,tensorflow,jax
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Provides-Extra: numpy
+Requires-Dist: numpy>=1.17.0; extra == "numpy"
+Provides-Extra: torch
+Requires-Dist: torch>=1.7.0; extra == "torch"
+Provides-Extra: tensorflow
+Requires-Dist: tensorflow>=2.0.0; extra == "tensorflow"
+Provides-Extra: jax
+Requires-Dist: jax>=0.2.0; extra == "jax"
+Requires-Dist: jaxlib>=0.1.0; extra == "jax"
+Provides-Extra: sklearn
+Requires-Dist: scikit-learn>=0.24.0; extra == "sklearn"
+Requires-Dist: numpy>=1.17.0; extra == "sklearn"
+Provides-Extra: distributed
+Requires-Dist: torch>=1.7.0; extra == "distributed"
+Provides-Extra: dev
+Requires-Dist: pytest>=6.0.0; extra == "dev"
+Requires-Dist: pytest-cov>=2.10.0; extra == "dev"
+Requires-Dist: black>=21.0; extra == "dev"
+Requires-Dist: flake8>=3.9.0; extra == "dev"
+Requires-Dist: mypy>=0.900; extra == "dev"
+Provides-Extra: all
+Requires-Dist: numpy>=1.17.0; extra == "all"
+Requires-Dist: torch>=1.7.0; extra == "all"
+Requires-Dist: tensorflow>=2.0.0; extra == "all"
+Requires-Dist: jax>=0.2.0; extra == "all"
+Requires-Dist: jaxlib>=0.1.0; extra == "all"
+Requires-Dist: scikit-learn>=0.24.0; extra == "all"
+Dynamic: home-page
+Dynamic: requires-python
+
+# seed_everything
+
+Comprehensive seeding for reproducible machine learning training across all major frameworks.
+
+## 🌱 Overview
+
+`seed_everything` is a Python package that provides utilities to set random seeds for reproducible machine learning model training across all major ML frameworks and distributed training packages used in industry.
+
+With a single function call, you can seed:
+- Python's built-in `random` module
+- NumPy
+- PyTorch (CPU + CUDA + cuDNN)
+- TensorFlow / Keras
+- JAX
+- scikit-learn
+- Distributed training frameworks (torch.distributed, Horovod, DeepSpeed)
+
+## 🚀 Installation
+
+### Basic Installation
+
+```bash
+pip install seed_everything
+```
+
+### With Optional Dependencies
+
+Install with support for specific frameworks:
+
+```bash
+# Install with NumPy support
+pip install seed_everything[numpy]
+
+# Install with PyTorch support
+pip install seed_everything[torch]
+
+# Install with TensorFlow support
+pip install seed_everything[tensorflow]
+
+# Install with JAX support
+pip install seed_everything[jax]
+
+# Install with scikit-learn support
+pip install seed_everything[sklearn]
+
+# Install with all framework support
+pip install seed_everything[all]
+
+# Install for development (includes test dependencies)
+pip install seed_everything[dev]
+```
+
+## 📖 Quick Start
+
+### Basic Usage
+
+```python
+import seed_everything
+
+# Seed all available frameworks with a single call
+seed_everything.seed_everything(42)
+
+# Now all your random operations are reproducible!
+import random
+import numpy as np
+import torch
+
+print(random.random())      # Reproducible
+print(np.random.rand())     # Reproducible
+print(torch.rand(1))        # Reproducible
+```
+
+### Advanced Usage
+
+```python
+import seed_everything
+
+# Seed with custom options
+result = seed_everything.seed_everything(
+    seed=42,
+    deterministic=True,  # Enable deterministic operations (may impact performance)
+    warn=True           # Emit warnings about potential non-deterministic operations
+)
+
+# Check which frameworks were seeded
+print(f"NumPy seeded: {result['numpy']}")
+print(f"PyTorch seeded: {result['torch']}")
+print(f"TensorFlow seeded: {result['tensorflow']}")
+
+# For JAX, you get a PRNG key
+if result['jax']:
+    jax_key = result['jax_key']
+    # Use this key for JAX random operations
+```
+
+### Individual Framework Seeding
+
+You can also seed frameworks individually:
+
+```python
+from seed_everything import (
+    seed_python,
+    seed_numpy,
+    seed_torch,
+    seed_tensorflow,
+    seed_jax,
+)
+
+# Seed only specific frameworks
+seed_python(42)
+seed_numpy(42)
+seed_torch(42, deterministic=True)
+seed_tensorflow(42)
+jax_key = seed_jax(42)
+```
+
+### Distributed Training
+
+For distributed training, use rank-aware seeding to ensure different workers get different but reproducible seeds:
+
+```python
+from seed_everything import seed_distributed
+
+# Automatically detect rank and seed accordingly
+seed = seed_distributed(base_seed=42)  # rank 0 gets seed 42, rank 1 gets 43, etc.
+
+# Or explicitly specify rank
+seed = seed_distributed(base_seed=42, rank=3)  # This worker gets seed 45
+```
+
+### DataLoader Worker Seeding (PyTorch)
+
+For reproducible data loading with multiple workers:
+
+```python
+from torch.utils.data import DataLoader
+from seed_everything import get_worker_init_fn
+
+# Create a DataLoader with deterministic worker seeding
+loader = DataLoader(
+    dataset,
+    batch_size=32,
+    num_workers=4,
+    worker_init_fn=get_worker_init_fn(base_seed=42)
+)
+```
+
+### scikit-learn Support
+
+```python
+from seed_everything import get_sklearn_random_state, seed_sklearn_estimator
+from sklearn.ensemble import RandomForestClassifier
+
+# Get a numpy RandomState for sklearn
+random_state = get_sklearn_random_state(42)
+
+# Use it with sklearn estimators
+clf = RandomForestClassifier(random_state=random_state)
+
+# Or seed an existing estimator
+clf = RandomForestClassifier()
+seed_sklearn_estimator(clf, 42)
+```
+
+## 🎯 Supported Frameworks
+
+| Framework | Module | Status | Notes |
+|-----------|--------|--------|-------|
+| Python stdlib | `random`, `PYTHONHASHSEED` | ✅ Always available | Seeds built-in random module |
+| NumPy | `numpy.random` | ✅ Optional | Seeds global RNG and returns Generator |
+| PyTorch | `torch` | ✅ Optional | Seeds CPU, CUDA, cuDNN determinism |
+| TensorFlow | `tensorflow` | ✅ Optional | Seeds TF and sets deterministic ops |
+| JAX | `jax.random` | ✅ Optional | Returns PRNG key |
+| scikit-learn | `sklearn` | ✅ Optional | Provides RandomState utilities |
+| Distributed | `torch.distributed`, Horovod, DeepSpeed | ✅ Optional | Rank-aware seeding |
+
+## 📚 API Reference
+
+### Core Functions
+
+#### `seed_everything(seed=42, deterministic=True, warn=True)`
+
+Master function that seeds all available frameworks.
+
+**Parameters:**
+- `seed` (int): Seed value (0 to 2^32-1). Default: 42
+- `deterministic` (bool): Enable deterministic operations. Default: True
+- `warn` (bool): Emit warnings about non-deterministic ops. Default: True
+
+**Returns:** Dictionary with seeding results and JAX PRNG key (if available)
+
+### Individual Seeders
+
+- `seed_python(seed, warn=True)` - Seed Python's random module
+- `seed_numpy(seed, warn=True)` - Seed NumPy, returns Generator
+- `seed_torch(seed, deterministic=True, benchmark=False, warn=True)` - Seed PyTorch
+- `seed_tensorflow(seed, deterministic=True, warn=True)` - Seed TensorFlow
+- `seed_jax(seed, warn=True)` - Seed JAX, returns PRNG key
+- `get_sklearn_random_state(seed, warn=True)` - Get sklearn RandomState
+- `seed_sklearn_estimator(estimator, seed)` - Seed sklearn estimator
+
+### Distributed Training
+
+- `seed_distributed(seed, rank=None, warn=True)` - Rank-aware seeding
+- `get_worker_init_fn(base_seed=42)` - Get DataLoader worker init function
+- `get_rank()` - Auto-detect distributed training rank
+
+### Utilities
+
+- `validate_seed(seed)` - Validate seed value
+- `get_seed_info()` - Get information about available frameworks
+
+## ⚠️ Important Notes on Determinism
+
+### General Limitations
+
+Complete determinism in ML training is challenging and may not always be achievable. This package does its best to configure frameworks for deterministic behavior, but:
+
+1. **Performance Trade-off**: Deterministic operations may be slower than non-deterministic ones
+2. **Hardware Differences**: Results may vary across different hardware (CPU vs GPU, different GPU models)
+3. **Framework Versions**: Different versions of frameworks may produce different results
+4. **Unsupported Operations**: Some operations don't have deterministic implementations
+
+### PyTorch Specific
+
+- Setting `deterministic=True` enables `torch.backends.cudnn.deterministic` and `torch.use_deterministic_algorithms()`
+- Some PyTorch operations may raise errors in deterministic mode if they don't have deterministic implementations
+- See [PyTorch Reproducibility Guide](https://pytorch.org/docs/stable/notes/randomness.html) for details
+
+### TensorFlow Specific
+
+- Sets `TF_DETERMINISTIC_OPS=1` and `TF_CUDNN_DETERMINISTIC=1`
+- Requires TensorFlow 2.1+ for full determinism support
+- See [TensorFlow Determinism Guide](https://www.tensorflow.org/api_docs/python/tf/config/experimental/enable_op_determinism) for details
+
+### JAX Specific
+
+- JAX uses explicit PRNG keys instead of global state
+- You must use the returned key for all random operations
+- See [JAX Random Numbers Guide](https://jax.readthedocs.io/en/latest/jax-101/05-random-numbers.html) for details
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+MIT License - see LICENSE file for details.
+
+## 🙏 Acknowledgments
+
+This package consolidates best practices from the ML community for reproducible research.
