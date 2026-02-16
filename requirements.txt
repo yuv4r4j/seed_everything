@@ -1,0 +1,14 @@
+# Core dependencies
+# (no core dependencies - all frameworks are optional)
+
+# Optional dependencies - install as needed:
+# pip install seed_everything[numpy]
+# pip install seed_everything[torch]
+# pip install seed_everything[tensorflow]
+# pip install seed_everything[jax]
+# pip install seed_everything[sklearn]
+# pip install seed_everything[all]
+
+# Development dependencies
+pytest>=6.0.0
+pytest-cov>=2.10.0
