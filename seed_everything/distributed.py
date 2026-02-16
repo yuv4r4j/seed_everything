@@ -105,7 +105,7 @@ def seed_distributed(
     return rank_seed
 
 
-def worker_init_fn(worker_id: int, base_seed: int = 42) -> Callable[[int], None]:
+def worker_init_fn(base_seed: int = 42) -> Callable[[int], None]:
     """
     Create a worker initialization function for PyTorch DataLoader.
     
@@ -113,27 +113,26 @@ def worker_init_fn(worker_id: int, base_seed: int = 42) -> Callable[[int], None]
     Use this with torch.utils.data.DataLoader(worker_init_fn=...).
     
     Args:
-        worker_id: The worker ID (automatically provided by DataLoader)
         base_seed: The base seed value (default: 42)
         
     Returns:
         A function that can be used as worker_init_fn for DataLoader
     """
-    def _init_fn(wid: int) -> None:
+    def _init_fn(worker_id: int) -> None:
         """Initialize worker with deterministic seed."""
         import random
-        import numpy as np
         
         # Compute worker-specific seed
-        worker_seed = base_seed + wid
+        worker_seed = base_seed + worker_id
         
         # Seed Python
         random.seed(worker_seed)
         
         # Seed NumPy
         try:
+            import numpy as np
             np.random.seed(worker_seed)
-        except:
+        except ImportError:
             pass
         
         # Seed PyTorch
